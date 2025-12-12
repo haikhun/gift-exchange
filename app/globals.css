@@ -1,26 +1,57 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-christmas-green: #2F5D62;
+  --color-christmas-red: #D9381E;
+  --color-christmas-gold: #F4E4BA;
+
+  --color-background: #FDFBF7;
+  --color-foreground: #2F5D62;
+
+  --font-sans: var(--font-noto-sans-tc);
+  --font-display: var(--font-mountains);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  --background: var(--color-background);
+  --foreground: var(--color-foreground);
+  --bg-pattern: radial-gradient(circle at 10% 20%, rgba(217, 56, 30, 0.05) 0%, transparent 20%),
+    radial-gradient(circle at 90% 80%, rgba(47, 93, 98, 0.05) 0%, transparent 20%),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23D9381E' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0F172A;
+    --foreground: #FDFBF7;
+    --bg-pattern: radial-gradient(circle at 50% 50%, rgba(217, 56, 30, 0.1) 0%, transparent 50%);
   }
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
+  background-image: var(--bg-pattern);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes fall {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: translateY(100vh) translateX(20px);
+    opacity: 0.3;
+  }
+}
+
+.animate-fall {
+  animation-name: fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
 }

@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EventStatus {
+  OPEN
+  DRAWN
+  COMPLETED
+}
+
+model Event {
+  id          String        @id @default(uuid())
+  title       String
+  description String?
+  budget      String?
+  date        String?
+  slug        String        @unique // For shareable links (e.g. /join/slug)
+  status      EventStatus   @default(OPEN)
+  adminPassword String? // Deprecated but kept for migration safety, will rely on ownerId
+  ownerId     String?       // The cookie-based generic ID of the creator
+
+  participants Participant[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Participant {
+  id        String   @id @default(uuid())
+  name      String
+  avatar    String?  // Optional avatar URL/id
+  wishlist  String?
+
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  userId    String?  // The cookie-based generic ID of this user, for privacy checks
+
+  // The person this participant is sending a gift TO (target)
+  
+  // The person this participant is sending a gift TO (target)
+  targetId  String?  @unique
+  target    Participant? @relation("GiftMap", fields: [targetId], references: [id])
+  
+  // The person who is sending a gift TO this participant (sender)
+  sender    Participant? @relation("GiftMap")
+
+  createdAt DateTime @default(now())
+}
