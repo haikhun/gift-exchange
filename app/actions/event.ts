@@ -18,20 +18,18 @@ function generateSlug(length = 6) {
 }
 
 // Generate simple random user ID (cookie) if not exists
+// Get user ID from cookie (set by middleware)
 async function getUserId() {
     const cookieStore = await cookies();
-    let userId = cookieStore.get("gift_user_id")?.value;
+    const userId = cookieStore.get("gift_user_id")?.value;
 
     if (!userId) {
-        // Simple random ID, enough for MVP session tracking
-        // Using same char set for simplicity or just Math.random
-        userId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        cookieStore.set("gift_user_id", userId, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            maxAge: 60 * 60 * 24 * 365, // 1 year
-            path: "/",
-        });
+        // Should not happen if middleware is working, but safe fallback just in case
+        // (Note: we can't set cookies easily in a simple async function in Server Actions unless we return it,
+        // so we rely on middleware. If missing, we might throw or return null, but for now we'll throw)
+        // Actually, let's allow it to return null and let callers handle, or throw.
+        // Given the requirement, throw to ensure we don't create "ghost" events.
+        throw new Error("Session invalid. Please refresh the page.");
     }
     return userId;
 }
