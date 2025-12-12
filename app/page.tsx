@@ -3,6 +3,8 @@ import { Gift, Users, Sparkles, Clock, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import Hero from "@/components/Hero";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const events = await db.event.findMany({
     orderBy: { createdAt: "desc" },
