@@ -49,8 +49,8 @@ export default function ResultReveal({ slug, nickname }: { slug: string, nicknam
 
                 {targetWishlist ? (
                     <div className="bg-christmas-gold/10 p-4 rounded-xl mb-4 border border-christmas-gold/30">
-                        <p className="text-xs text-christmas-gold font-bold uppercase tracking-widest mb-2">Wishlist</p>
-                        <p className="text-gray-700 italic">"{targetWishlist}"</p>
+                        <p className="text-xs text-amber-700 font-bold uppercase tracking-widest mb-2">Wishlist</p>
+                        <p className="text-amber-900 italic font-medium">"{targetWishlist}"</p>
                     </div>
                 ) : (
                     <p className="text-sm text-gray-400 mb-4">這位朋友沒有留下許願清單</p>

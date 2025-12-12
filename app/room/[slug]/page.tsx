@@ -87,7 +87,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
                                     href={`/join?code=${event.slug}`}
                                     className="px-8 py-3 rounded-full bg-christmas-green text-white font-bold shadow-lg shadow-emerald-900/10 hover:bg-emerald-800 transition-colors flex items-center gap-2"
                                 >
-                                    <Share2 size={18} /> 邀請朋友
+                                    <Gift size={18} /> 我要加入
                                 </Link>
                                 {isOwner && <DrawButton eventSlug={event.slug} />}
                             </div>

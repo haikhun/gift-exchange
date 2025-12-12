@@ -42,8 +42,8 @@ export default function DeleteButton({ eventSlug }: { eventSlug: string }) {
             </button>
 
             {isOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl w-full max-w-sm border-2 border-christmas-red/20 relative overflow-hidden">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl w-[90vw] max-w-sm border-2 border-christmas-red/20 relative overflow-hidden mx-auto">
                         {/* Decorative bg */}
                         <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
                             <Trash2 size={100} className="text-christmas-red" />
