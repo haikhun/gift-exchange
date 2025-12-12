@@ -2,13 +2,12 @@
 
 import { db } from "@/lib/db";
 import { safeDbWrite, safeDbRead } from "@/lib/safe-db";
-export const runtime = "nodejs"; // Enforce Node.js runtime for Prisma
-// import { nanoid } from "nanoid"; // Warning: nanoid is ESM only, Next.js Server Actions usually handle it but might be tricky. Using simpler manual generation to avoid ESM issues if possible, or force dynamic import.
-// Next.js stable can bundle ESM. Let's try custom random func for safety and no-deps.
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-
 import { cookies } from "next/headers";
+
+export const runtime = "nodejs";
+
 
 function generateSlug(length = 6) {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Removed ambiguous chars 1, I, 0, O
