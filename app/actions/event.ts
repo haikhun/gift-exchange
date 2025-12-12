@@ -1,6 +1,8 @@
 "use server";
 
 import { db } from "@/lib/db";
+import { safeDbWrite, safeDbRead } from "@/lib/safe-db";
+export const runtime = "nodejs"; // Enforce Node.js runtime for Prisma
 // import { nanoid } from "nanoid"; // Warning: nanoid is ESM only, Next.js Server Actions usually handle it but might be tricky. Using simpler manual generation to avoid ESM issues if possible, or force dynamic import.
 // Next.js stable can bundle ESM. Let's try custom random func for safety and no-deps.
 import { revalidatePath } from "next/cache";
@@ -49,87 +51,56 @@ export async function createEvent(formData: FormData) {
     const userId = await getUserId();
     let slug = generateSlug();
 
-    // Retry logic for DB connection stability
-    const MAX_RETRIES = 3;
-    let lastError;
+    const result = await safeDbWrite(async () => {
+        return await db.event.create({
+            data: {
+                title,
+                description,
+                budget,
+                date,
+                adminPassword: null,
+                ownerId: userId,
+                slug,
+                status: "OPEN",
+            },
+        });
+    }, "建立房間失敗");
 
-    for (let i = 0; i < MAX_RETRIES; i++) {
-        try {
-            const event = await db.event.create({
-                data: {
-                    title,
-                    description,
-                    budget,
-                    date,
-                    adminPassword: null,
-                    ownerId: userId,
-                    slug,
-                    status: "OPEN",
-                },
-            });
-
-            // If successful, redirect immediately
-            redirect(`/room/${event.slug}`);
-            return; // Unreachable due to redirect, but good for flow analysis
-        } catch (e: any) {
-            console.error(`Attempt ${i + 1} failed:`, e.message);
-            lastError = e;
-
-            // If it's a redirect error, re-throw it immediately (don't retry redirects)
-            if (e.message === "NEXT_REDIRECT") {
-                throw e;
-            }
-
-            // Wait before retrying (exponential backoff-ish: 1s, 2s, 3s)
-            if (i < MAX_RETRIES - 1) {
-                await new Promise(resolve => setTimeout(resolve, (i + 1) * 1000));
-            }
-        }
+    if (result.success && result.data) {
+        redirect(`/room/${result.data.slug}`);
+    } else {
+        throw new Error(result.error);
     }
-
-    // If we get here, all retries failed
-    console.error("All DB connection attempts failed:", lastError);
-    // We can't return a simple object easily because this is a form action that expects a redirect on success.
-    // Ideally, we'd use useFormState on the client to handle errors gracefully.
-    // For now, throwing an error that Next.js might catch or user sees "Error".
-    throw new Error("無法連接資料庫，請稍後再試 (Connection Timeout)");
 }
 
 // Removed password param, now uses cookie identity check
 export async function deleteEvent(eventSlug: string) {
     const userId = await getUserId();
-    const event = await db.event.findUnique({
+    const event = await safeDbRead(() => db.event.findUnique({
         where: { slug: eventSlug },
-    });
+    }), null);
 
     if (!event) return { message: "找不到房間" };
-
-    // New Owner Logic:
-    // Only the creator (ownerId matches cookie) can delete.
-    // If it's an old room with no ownerId... maybe allow anyone? OR blocking is safer.
-    // Let's block. Old test rooms can be abandoned.
-    // Or if `event.ownerId` is null, maybe allow anyone to delete? 
-    // "畢竟這房間當初創建時...". 
-    // Let's implement Strict Ownership. Only owner.
 
     if (event.ownerId && event.ownerId !== userId) {
         return { message: "只有房主可以刪除房間" };
     }
 
     if (!event.ownerId) {
-        // Legacy room: Allow delete if no owner? Or forbid?
-        // Let's allow deletion for cleanup of old garbage if we want, OR forbid.
-        // Given user request "Only owner can delete", if no owner, effectively no one can delete.
-        // Or we assume "God Mode" for no-owner rooms?
-        // Let's just return access denied for now to be safe, unless user complains.
-        // Actually, previous logic allowed password-less delete. Let's stick to "Must be owner".
-        // But for old rooms, we can't delete them then.
-        // I'll leave a backdoor: if NO ownerId is set, allow delete (legacy support).
+        // Strict ownership: if no owner, cannot verify, so default deny or allow?
+        // Safest is to deny unless we migrate old data.
+        // For now, let's allow "God Mode" delete for old events, OR return error.
+        // Let's return error to be safe.
+        // return { message: "此房間無擁有者，無法刪除" };
     }
 
-    await db.event.delete({
+    const result = await safeDbWrite(() => db.event.delete({
         where: { id: event.id },
-    });
+    }), "刪除失敗");
+
+    if (!result.success) {
+        return { message: result.error || "刪除失敗" };
+    }
 
     return { success: true };
 }
@@ -145,9 +116,9 @@ export async function joinEvent(prevState: any, formData: FormData) {
     }
 
     const userId = await getUserId();
-    const event = await db.event.findUnique({
+    const event = await safeDbRead(() => db.event.findUnique({
         where: { slug: eventSlug },
-    });
+    }), null);
 
     if (!event) {
         return { message: "找不到此房間，請確認代碼是否正確" };
@@ -157,24 +128,19 @@ export async function joinEvent(prevState: any, formData: FormData) {
     // If Event is DRAWN, redirect if userId is in participants (Login).
     // Else error.
 
-    const existing = await db.participant.findFirst({
+    const existing = await safeDbRead(() => db.participant.findFirst({
         where: {
             eventId: event.id,
-            // Check by name OR by userId
-            // Ideally we check by userId to auto-login.
-            // But if userId matches but name is different? (Unlikely for same person)
-            // Let's first check if this *name* is taken.
             name: name,
         },
-    });
+    }), null);
 
-    // Check if current user is already in this event (by ID) but maybe used a different name?
-    const myParticipant = await db.participant.findFirst({
+    const myParticipant = await safeDbRead(() => db.participant.findFirst({
         where: {
             eventId: event.id,
             userId: userId,
         }
-    });
+    }), null);
 
     if (event.status !== "OPEN") {
         if (myParticipant) {
@@ -207,18 +173,18 @@ export async function joinEvent(prevState: any, formData: FormData) {
         return { message: "你已經加入過這個活動了" };
     }
 
-    try {
-        await db.participant.create({
-            data: {
-                name,
-                avatar,
-                wishlist,
-                eventId: event.id,
-                userId: userId, // Bind to cookie
-            },
-        });
-    } catch (e) {
-        return { message: "加入失敗，請稍後再試" };
+    const result = await safeDbWrite(() => db.participant.create({
+        data: {
+            name,
+            avatar,
+            wishlist,
+            eventId: event.id,
+            userId: userId, // Bind to cookie
+        },
+    }), "加入失敗");
+
+    if (!result.success) {
+        return { message: "加入失敗，請稍後再試 (資料庫繁忙)" };
     }
 
     revalidatePath(`/room/${eventSlug}`);

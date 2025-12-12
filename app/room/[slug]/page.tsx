@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { safeDbRead } from "@/lib/safe-db";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Gift, Calendar, Clock, Lock, Unlock, Share2, Copy, Check, Info, Sparkles, Star } from "lucide-react";
@@ -8,6 +9,8 @@ import DrawButton from "@/components/DrawButton";
 import ResultReveal from "@/components/ResultReveal";
 import ParticipantTree from "@/components/ParticipantTree"; // New Tree Component
 import { cookies } from "next/headers";
+
+export const runtime = "nodejs"; // Enforce Node.js for Prisma
 
 interface RoomPageProps {
     params: Promise<{
@@ -20,12 +23,12 @@ export default async function RoomPage({ params }: RoomPageProps) {
     const cookieStore = await cookies();
     const userId = cookieStore.get("gift_user_id")?.value;
 
-    const event = await db.event.findUnique({
+    const event = await safeDbRead(() => db.event.findUnique({
         where: { slug },
         include: {
             participants: true,
         },
-    });
+    }), null);
 
     if (!event) {
         notFound();

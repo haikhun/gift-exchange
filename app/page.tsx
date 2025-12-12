@@ -1,16 +1,18 @@
 import { db } from "@/lib/db";
+import { safeDbRead } from "@/lib/safe-db";
 import { Gift, Users, Sparkles, Clock, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import Hero from "@/components/Hero";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs"; // Enforce Node.js for Prisma
 
 export default async function Home() {
-  const events = await db.event.findMany({
+  const events = await safeDbRead(() => db.event.findMany({
     orderBy: { createdAt: "desc" },
     include: { _count: { select: { participants: true } } },
     take: 20, // Limit to recent 20
-  });
+  }), []);
 
   return (
     <main className="min-h-screen flex flex-col items-center bg-background text-foreground relative overflow-hidden">
