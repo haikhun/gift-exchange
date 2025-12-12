@@ -5,7 +5,6 @@ import { safeDbRead, safeDbWrite } from "@/lib/safe-db";
 import { revalidatePath } from "next/cache";
 import { type Participant } from "@prisma/client";
 
-export const runtime = "nodejs";
 
 // Fisher-Yates Shuffle
 function shuffle(array: Participant[]): Participant[] {

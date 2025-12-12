@@ -6,7 +6,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
-export const runtime = "nodejs";
 
 
 function generateSlug(length = 6) {
@@ -57,7 +56,7 @@ export async function createEvent(formData: FormData) {
                 description,
                 budget,
                 date,
-                adminPassword: null,
+                // adminPassword: null, // Optional, default is null
                 ownerId: userId,
                 slug,
                 status: "OPEN",
