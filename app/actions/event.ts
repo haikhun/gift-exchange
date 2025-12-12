@@ -49,20 +49,50 @@ export async function createEvent(formData: FormData) {
     const userId = await getUserId();
     let slug = generateSlug();
 
-    const event = await db.event.create({
-        data: {
-            title,
-            description,
-            budget,
-            date,
-            adminPassword: null, // No longer used
-            ownerId: userId,     // Assigned to current browser session
-            slug,
-            status: "OPEN",
-        },
-    });
+    // Retry logic for DB connection stability
+    const MAX_RETRIES = 3;
+    let lastError;
 
-    redirect(`/room/${event.slug}`);
+    for (let i = 0; i < MAX_RETRIES; i++) {
+        try {
+            const event = await db.event.create({
+                data: {
+                    title,
+                    description,
+                    budget,
+                    date,
+                    adminPassword: null,
+                    ownerId: userId,
+                    slug,
+                    status: "OPEN",
+                },
+            });
+
+            // If successful, redirect immediately
+            redirect(`/room/${event.slug}`);
+            return; // Unreachable due to redirect, but good for flow analysis
+        } catch (e: any) {
+            console.error(`Attempt ${i + 1} failed:`, e.message);
+            lastError = e;
+
+            // If it's a redirect error, re-throw it immediately (don't retry redirects)
+            if (e.message === "NEXT_REDIRECT") {
+                throw e;
+            }
+
+            // Wait before retrying (exponential backoff-ish: 1s, 2s, 3s)
+            if (i < MAX_RETRIES - 1) {
+                await new Promise(resolve => setTimeout(resolve, (i + 1) * 1000));
+            }
+        }
+    }
+
+    // If we get here, all retries failed
+    console.error("All DB connection attempts failed:", lastError);
+    // We can't return a simple object easily because this is a form action that expects a redirect on success.
+    // Ideally, we'd use useFormState on the client to handle errors gracefully.
+    // For now, throwing an error that Next.js might catch or user sees "Error".
+    throw new Error("無法連接資料庫，請稍後再試 (Connection Timeout)");
 }
 
 // Removed password param, now uses cookie identity check
