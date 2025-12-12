@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Trash2 } from "lucide-react";
 import { deleteEvent } from "@/app/actions/event";
 import { useRouter } from "next/navigation";
@@ -13,7 +14,12 @@ export default function DeleteButton({ eventSlug }: { eventSlug: string }) {
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [mounted, setMounted] = useState(false);
     const router = useRouter();
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const handleDelete = async () => {
         setLoading(true);
@@ -41,7 +47,7 @@ export default function DeleteButton({ eventSlug }: { eventSlug: string }) {
                 <Trash2 size={20} />
             </button>
 
-            {isOpen && (
+            {isOpen && mounted && createPortal(
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl w-[90vw] max-w-sm border-2 border-christmas-red/20 relative overflow-hidden mx-auto">
                         {/* Decorative bg */}
@@ -81,7 +87,8 @@ export default function DeleteButton({ eventSlug }: { eventSlug: string }) {
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     );
